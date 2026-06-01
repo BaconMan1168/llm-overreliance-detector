@@ -1,0 +1,75 @@
+function isEditKey(key) {
+  return key.length === 1 || key === "Backspace" || key === "Delete";
+}
+
+function computeStats(events, startedAt) {
+  const now = Date.now();
+  const durationS = Math.round((now - startedAt) / 1000);
+
+  const window60s = now - 60_000;
+  const pasteRatePerMin = events.filter(
+    (e) => e.event === "paste" && e.timestamp >= window60s
+  ).length;
+
+  const window10s = now - 10_000;
+  const tabSwitchRatePer10s = events.filter(
+    (e) => e.event === "visibilitychange" && e.timestamp >= window10s
+  ).length;
+
+  const totalPastes = events.filter((e) => e.event === "paste").length;
+  const totalEditKeys = events.filter(
+    (e) => e.event === "keydown" && isEditKey(e.key)
+  ).length;
+  const editGranularityRatio =
+    totalEditKeys > 0 ? +(totalPastes / totalEditKeys).toFixed(3) : 0;
+
+  return { paste_rate_per_min: pasteRatePerMin, tab_switch_rate_per_10s: tabSwitchRatePer10s, edit_granularity_ratio: editGranularityRatio, duration_s: durationS };
+}
+
+async function startNewSession(tabId) {
+  const sessionId = crypto.randomUUID();
+  const session = {
+    session_id: sessionId,
+    tab_id: tabId,
+    started_at: Date.now(),
+    last_updated: Date.now(),
+    raw_events: [],
+    stats: { paste_rate_per_min: 0, tab_switch_rate_per_10s: 0, edit_granularity_ratio: 0, duration_s: 0 },
+  };
+
+  const { sessions = [], tab_sessions = {} } = await chrome.storage.local.get(["sessions", "tab_sessions"]);
+  sessions.push(session);
+  tab_sessions[tabId] = sessionId;
+
+  await chrome.storage.local.set({ sessions, tab_sessions, current_session_id: sessionId });
+}
+
+async function appendEvent(tabId, eventData) {
+  const { sessions = [], tab_sessions = {} } = await chrome.storage.local.get(["sessions", "tab_sessions"]);
+  const sessionId = tab_sessions[tabId];
+  if (!sessionId) return;
+
+  const idx = sessions.findIndex((s) => s.session_id === sessionId);
+  if (idx === -1) return;
+
+  sessions[idx].raw_events.push(eventData);
+  sessions[idx].last_updated = Date.now();
+  sessions[idx].stats = computeStats(sessions[idx].raw_events, sessions[idx].started_at);
+
+  await chrome.storage.local.set({ sessions, current_session_id: sessionId });
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const tabId = sender.tab?.id;
+  if (!tabId) return;
+
+  if (message.type === "SESSION_START") {
+    startNewSession(tabId).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+
+  if (message.type === "EVENT") {
+    appendEvent(tabId, message).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+});
