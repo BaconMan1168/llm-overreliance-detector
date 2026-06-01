@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 280px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      background: #1a1a1a;
+      color: #eee;
+    }
+    h1 {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #888;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .cards { padding: 10px 14px 4px; }
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.green  { background: #22c55e; }
+    .dot.yellow { background: #eab308; }
+    .dot.red    { background: #ef4444; }
+    .dot.gray   { background: #444; }
+    .label { flex: 1; color: #ccc; }
+    .bar-wrap {
+      width: 64px;
+      height: 5px;
+      background: #2e2e2e;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.2s; }
+    .bar-fill.green  { background: #22c55e; }
+    .bar-fill.yellow { background: #eab308; }
+    .bar-fill.red    { background: #ef4444; }
+    .bar-fill.gray   { background: #444; }
+    .value { width: 64px; text-align: right; color: #666; font-size: 11px; }
+    .footer { padding: 8px 14px 12px; border-top: 1px solid #2a2a2a; }
+    button {
+      width: 100%;
+      padding: 7px;
+      background: #2a2a2a;
+      color: #ccc;
+      border: 1px solid #333;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    button:hover { background: #333; color: #eee; }
+    .empty {
+      padding: 16px 14px 12px;
+      color: #555;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Overreliance Detector</h1>
+  <div id="content"></div>
+  <script src="data-export.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
