@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Overreliance Detector",
+  "version": "1.0",
+  "description": "Detects 3 behavioral indicators of LLM overreliance on ChatGPT and Claude.ai",
+  "permissions": ["storage", "tabs", "activeTab"],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://claude.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chat.openai.com/*", "https://claude.ai/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Overreliance Detector"
+  }
+}
