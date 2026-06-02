@@ -65,7 +65,36 @@ async function init() {
   } else {
     contentEl.innerHTML = `
       <div class="cards">${renderCards(current.stats)}</div>
+      <div style="padding: 6px 14px 4px;">
+        <input type="text" id="task-label" placeholder="Label this task (optional)" value="${current.task_label ?? ""}">
+      </div>
+      <div id="self-report-section" style="display:none; padding: 6px 14px 4px;">
+        <div style="color:#aaa; font-size:12px; margin-bottom:6px;" id="self-report-prompt">How much did you rely on the AI? (1 = rewrote entirely, 5 = used as-is)</div>
+        <div style="display:flex; gap:6px;">
+          ${[1,2,3,4,5].map((n) => `<button class="score-btn" data-score="${n}">${n}</button>`).join("")}
+        </div>
+      </div>
+      <div style="padding: 4px 14px 6px;">
+        <button id="end-task-btn">End task</button>
+      </div>
       <div class="footer"><button id="export-btn">Export session</button></div>`;
+
+    const taskLabelInput = document.getElementById("task-label");
+    taskLabelInput.addEventListener("change", () => {
+      chrome.runtime.sendMessage({ type: "UPDATE_SESSION", task_label: taskLabelInput.value }).catch(() => {});
+    });
+
+    document.getElementById("end-task-btn").addEventListener("click", () => {
+      document.getElementById("self-report-section").style.display = "block";
+    });
+
+    document.querySelectorAll(".score-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        chrome.runtime.sendMessage({ type: "UPDATE_SESSION", self_report_score: parseInt(btn.dataset.score) }).catch(() => {});
+        document.getElementById("self-report-prompt").textContent = "Saved.";
+        document.querySelectorAll(".score-btn").forEach((b) => { b.disabled = true; });
+      });
+    });
   }
 
   document.getElementById("export-btn").addEventListener("click", () => {

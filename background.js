@@ -42,6 +42,8 @@ async function startNewSession(tabId) {
     last_updated: Date.now(),
     raw_events: [],
     stats: { paste_rate_per_min: 0, tab_switch_rate_per_10s: 0, edit_granularity_ratio: 0, avg_paste_length: 0, duration_s: 0 },
+    task_label: "",
+    self_report_score: null,
   };
 
   const { sessions = [], tab_sessions = {} } = await chrome.storage.local.get(["sessions", "tab_sessions"]);
@@ -77,6 +79,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "EVENT") {
     appendEvent(tabId, message).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+
+  if (message.type === "UPDATE_SESSION") {
+    (async () => {
+      const { sessions = [], tab_sessions = {} } = await chrome.storage.local.get(["sessions", "tab_sessions"]);
+      const sessionId = tab_sessions[tabId];
+      if (!sessionId) return sendResponse({ ok: false });
+      const idx = sessions.findIndex((s) => s.session_id === sessionId);
+      if (idx === -1) return sendResponse({ ok: false });
+      if (message.task_label !== undefined) sessions[idx].task_label = message.task_label;
+      if (message.self_report_score !== undefined) sessions[idx].self_report_score = message.self_report_score;
+      await chrome.storage.local.set({ sessions });
+      sendResponse({ ok: true });
+    })();
     return true;
   }
 });
