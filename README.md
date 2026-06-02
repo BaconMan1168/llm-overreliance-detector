@@ -83,7 +83,7 @@ Target page (ChatGPT / Claude.ai)
 
 1. Clone or download this repository.
    ```bash
-   git clone https://github.com/<your-username>/llm-overreliance-detector.git
+   git clone https://github.com/<BaconMan1168>/llm-overreliance-detector.git
    ```
 2. Open `chrome://extensions` in Chrome.
 3. Enable **Developer mode** (toggle, top-right).
