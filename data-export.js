@@ -1,4 +1,5 @@
 function exportSessions(sessions) {
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const header = "session_id,timestamp,duration_s,paste_rate_per_min,tab_switch_rate_per_10s,edit_granularity_ratio,task_label,self_report_score,avg_paste_length,paste_after_idle_count,first_interaction_delay_s,avg_keypresses_between_pastes";
   const rows = sessions.map((s) =>
     [
@@ -8,7 +9,7 @@ function exportSessions(sessions) {
       s.stats.paste_rate_per_min,
       s.stats.tab_switch_rate_per_10s,
       s.stats.edit_granularity_ratio,
-      s.task_label ?? "",
+      q(s.task_label),
       s.self_report_score ?? "",
       s.stats.avg_paste_length,
       s.stats.paste_after_idle_count,
@@ -35,9 +36,9 @@ function exportSessions(sessions) {
         rawRows.push([
           s.session_id,
           e.timestamp,
-          e.event ?? "",
+          q(e.event ?? ""),
           e.contentLength ?? "",
-          e.key ?? "",
+          q(e.key ?? ""),
           e.scrollDelta ?? "",
           e.direction ?? "",
         ].join(","));

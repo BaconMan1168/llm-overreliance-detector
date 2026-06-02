@@ -27,10 +27,18 @@ def classify(value, yellow, red):
     return "GREEN"
 
 
+def safe_float(v):
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return None
+
+
 def summarize(sessions):
     print(f"  Sessions: {len(sessions)}")
     for key, label, yellow, red in INDICATORS:
-        values = [float(s[key]) for s in sessions if s.get(key)]
+        values = [safe_float(s[key]) for s in sessions if s.get(key, "") not in ("", None)]
+        values = [v for v in values if v is not None]
         if not values:
             continue
         mean = statistics.mean(values)
@@ -41,7 +49,7 @@ def summarize(sessions):
         else:
             print(f"  {label}: mean={mean:.2f}  range=[{lo:.2f}, {hi:.2f}]")
 
-    high_reliance = [s for s in sessions if s.get("self_report_score") and s["self_report_score"] != ""]
+    high_reliance = [s for s in sessions if s.get("self_report_score", "") not in ("", None)]
     if high_reliance:
         flagged = [s for s in high_reliance if float(s["self_report_score"]) >= 4]
         if flagged:
