@@ -66,7 +66,7 @@ async function init() {
     contentEl.innerHTML = `
       <div class="cards">${renderCards(current.stats)}</div>
       <div style="padding: 6px 14px 4px;">
-        <input type="text" id="task-label" placeholder="Label this task (optional)" value="${current.task_label ?? ""}">
+        <input type="text" id="task-label" placeholder="Label this task (optional)">
       </div>
       <div id="self-report-section" style="display:none; padding: 6px 14px 4px;">
         <div style="color:#aaa; font-size:12px; margin-bottom:6px;" id="self-report-prompt">How much did you rely on the AI? (1 = rewrote entirely, 5 = used as-is)</div>
@@ -80,8 +80,9 @@ async function init() {
       <div class="footer"><button id="export-btn">Export session</button></div>`;
 
     const taskLabelInput = document.getElementById("task-label");
-    taskLabelInput.addEventListener("change", () => {
-      chrome.runtime.sendMessage({ type: "UPDATE_SESSION", task_label: taskLabelInput.value }).catch(() => {});
+    taskLabelInput.value = current.task_label ?? "";
+    taskLabelInput.addEventListener("input", () => {
+      chrome.runtime.sendMessage({ type: "UPDATE_SESSION", session_id: current.session_id, task_label: taskLabelInput.value }).catch(() => {});
     });
 
     document.getElementById("end-task-btn").addEventListener("click", () => {
@@ -90,9 +91,10 @@ async function init() {
 
     document.querySelectorAll(".score-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        chrome.runtime.sendMessage({ type: "UPDATE_SESSION", self_report_score: parseInt(btn.dataset.score) }).catch(() => {});
+        chrome.runtime.sendMessage({ type: "UPDATE_SESSION", session_id: current.session_id, self_report_score: parseInt(btn.dataset.score) }).catch(() => {});
         document.getElementById("self-report-prompt").textContent = "Saved.";
         document.querySelectorAll(".score-btn").forEach((b) => { b.disabled = true; });
+        document.getElementById("end-task-btn").disabled = true;
       });
     });
   }

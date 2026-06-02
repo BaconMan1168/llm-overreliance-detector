@@ -69,6 +69,19 @@ async function appendEvent(tabId, eventData) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "UPDATE_SESSION") {
+    (async () => {
+      const { sessions = [] } = await chrome.storage.local.get(["sessions"]);
+      const idx = sessions.findIndex((s) => s.session_id === message.session_id);
+      if (idx === -1) return sendResponse({ ok: false });
+      if (message.task_label !== undefined) sessions[idx].task_label = message.task_label;
+      if (message.self_report_score !== undefined) sessions[idx].self_report_score = message.self_report_score;
+      await chrome.storage.local.set({ sessions });
+      sendResponse({ ok: true });
+    })();
+    return true;
+  }
+
   const tabId = sender.tab?.id;
   if (!tabId) return;
 
@@ -79,21 +92,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "EVENT") {
     appendEvent(tabId, message).then(() => sendResponse({ ok: true }));
-    return true;
-  }
-
-  if (message.type === "UPDATE_SESSION") {
-    (async () => {
-      const { sessions = [], tab_sessions = {} } = await chrome.storage.local.get(["sessions", "tab_sessions"]);
-      const sessionId = tab_sessions[tabId];
-      if (!sessionId) return sendResponse({ ok: false });
-      const idx = sessions.findIndex((s) => s.session_id === sessionId);
-      if (idx === -1) return sendResponse({ ok: false });
-      if (message.task_label !== undefined) sessions[idx].task_label = message.task_label;
-      if (message.self_report_score !== undefined) sessions[idx].self_report_score = message.self_report_score;
-      await chrome.storage.local.set({ sessions });
-      sendResponse({ ok: true });
-    })();
     return true;
   }
 });
