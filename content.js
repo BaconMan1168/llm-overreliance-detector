@@ -1,18 +1,14 @@
 chrome.runtime.sendMessage({ type: "SESSION_START", timestamp: Date.now() }).catch(() => {});
 
 let idleTimer = null;
-let lastActivityAt = Date.now();
 
 function resetIdleTimer() {
-  lastActivityAt = Date.now();
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
-    const idleDuration_ms = Date.now() - lastActivityAt;
     chrome.runtime.sendMessage({
       type: "EVENT",
       event: "idle",
       timestamp: Date.now(),
-      idleDuration_ms,
     }).catch(() => {});
   }, 3000);
 }
@@ -59,16 +55,18 @@ document.addEventListener("visibilitychange", () => {
       event: "visibilitychange",
       timestamp: Date.now(),
     }).catch(() => {});
+    resetIdleTimer();
   }
-  resetIdleTimer();
 });
 
 document.addEventListener("wheel", (e) => {
+  resetIdleTimer();
   scrollAccumulator += e.deltaY;
   clearTimeout(scrollDebounceTimer);
   scrollDebounceTimer = setTimeout(() => {
     const delta = scrollAccumulator;
     scrollAccumulator = 0;
+    if (delta === 0) return;
     chrome.runtime.sendMessage({
       type: "EVENT",
       event: "scroll",
@@ -76,6 +74,5 @@ document.addEventListener("wheel", (e) => {
       scrollDelta: Math.abs(delta),
       direction: delta > 0 ? "down" : "up",
     }).catch(() => {});
-    resetIdleTimer();
   }, 50);
 });
