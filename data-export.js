@@ -40,7 +40,7 @@ function exportSessions(sessions) {
           e.contentLength ?? "",
           q(e.key ?? ""),
           e.scrollDelta ?? "",
-          e.direction ?? "",
+          q(e.direction ?? ""),
         ].join(","));
       }
     }
