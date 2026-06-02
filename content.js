@@ -20,10 +20,12 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("copy", () => {
+  const text = window.getSelection()?.toString() ?? "";
   chrome.runtime.sendMessage({
     type: "EVENT",
     event: "copy",
     timestamp: Date.now(),
+    contentLength: text.length,
   }).catch(() => {});
 });
 

@@ -16,14 +16,21 @@ function computeStats(events, startedAt) {
     (e) => e.event === "visibilitychange" && e.timestamp >= window10s
   ).length;
 
-  const totalPastes = events.filter((e) => e.event === "paste").length;
-  const totalEditKeys = events.filter(
-    (e) => e.event === "keydown" && isEditKey(e.key)
+  const window5m = now - 300_000;
+  const pastes5m = events.filter((e) => e.event === "paste" && e.timestamp >= window5m);
+  const editKeys5m = events.filter(
+    (e) => e.event === "keydown" && isEditKey(e.key) && e.timestamp >= window5m
   ).length;
   const editGranularityRatio =
-    totalEditKeys > 0 ? +(totalPastes / totalEditKeys).toFixed(3) : 0;
+    editKeys5m > 0 ? +(pastes5m.length / editKeys5m).toFixed(3) : 0;
 
-  return { paste_rate_per_min: pasteRatePerMin, tab_switch_rate_per_10s: tabSwitchRatePer10s, edit_granularity_ratio: editGranularityRatio, duration_s: durationS };
+  const pastes60s = events.filter((e) => e.event === "paste" && e.timestamp >= window60s);
+  const avgPasteLength =
+    pastes60s.length > 0
+      ? +(pastes60s.reduce((sum, e) => sum + (e.contentLength ?? 0), 0) / pastes60s.length).toFixed(1)
+      : 0;
+
+  return { paste_rate_per_min: pasteRatePerMin, tab_switch_rate_per_10s: tabSwitchRatePer10s, edit_granularity_ratio: editGranularityRatio, avg_paste_length: avgPasteLength, duration_s: durationS };
 }
 
 async function startNewSession(tabId) {
@@ -34,7 +41,7 @@ async function startNewSession(tabId) {
     started_at: Date.now(),
     last_updated: Date.now(),
     raw_events: [],
-    stats: { paste_rate_per_min: 0, tab_switch_rate_per_10s: 0, edit_granularity_ratio: 0, duration_s: 0 },
+    stats: { paste_rate_per_min: 0, tab_switch_rate_per_10s: 0, edit_granularity_ratio: 0, avg_paste_length: 0, duration_s: 0 },
   };
 
   const { sessions = [], tab_sessions = {} } = await chrome.storage.local.get(["sessions", "tab_sessions"]);
