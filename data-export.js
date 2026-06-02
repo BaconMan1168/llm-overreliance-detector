@@ -1,5 +1,5 @@
 function exportSessions(sessions) {
-  const header = "session_id,timestamp,duration_s,paste_rate_per_min,tab_switch_rate_per_10s,edit_granularity_ratio";
+  const header = "session_id,timestamp,duration_s,paste_rate_per_min,tab_switch_rate_per_10s,edit_granularity_ratio,task_label,self_report_score,avg_paste_length,paste_after_idle_count,first_interaction_delay_s,avg_keypresses_between_pastes";
   const rows = sessions.map((s) =>
     [
       s.session_id,
@@ -8,6 +8,12 @@ function exportSessions(sessions) {
       s.stats.paste_rate_per_min,
       s.stats.tab_switch_rate_per_10s,
       s.stats.edit_granularity_ratio,
+      s.task_label ?? "",
+      s.self_report_score ?? "",
+      s.stats.avg_paste_length,
+      s.stats.paste_after_idle_count,
+      s.stats.first_interaction_delay_s,
+      s.stats.avg_keypresses_between_pastes,
     ].join(",")
   );
 
@@ -20,4 +26,31 @@ function exportSessions(sessions) {
   a.download = "overreliance_sessions.csv";
   a.click();
   URL.revokeObjectURL(url);
+
+  setTimeout(() => {
+    const rawHeader = "session_id,timestamp,event_type,content_length,key,scroll_delta,direction";
+    const rawRows = [];
+    for (const s of sessions) {
+      for (const e of s.raw_events ?? []) {
+        rawRows.push([
+          s.session_id,
+          e.timestamp,
+          e.event ?? "",
+          e.contentLength ?? "",
+          e.key ?? "",
+          e.scrollDelta ?? "",
+          e.direction ?? "",
+        ].join(","));
+      }
+    }
+    const rawCsv = [rawHeader, ...rawRows].join("\n");
+    const rawBlob = new Blob([rawCsv], { type: "text/csv" });
+    const rawUrl = URL.createObjectURL(rawBlob);
+
+    const b = document.createElement("a");
+    b.href = rawUrl;
+    b.download = "overreliance_events.csv";
+    b.click();
+    URL.revokeObjectURL(rawUrl);
+  }, 300);
 }

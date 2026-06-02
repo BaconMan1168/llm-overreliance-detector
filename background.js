@@ -30,7 +30,32 @@ function computeStats(events, startedAt) {
       ? +(pastes60s.reduce((sum, e) => sum + (e.contentLength ?? 0), 0) / pastes60s.length).toFixed(1)
       : 0;
 
-  return { paste_rate_per_min: pasteRatePerMin, tab_switch_rate_per_10s: tabSwitchRatePer10s, edit_granularity_ratio: editGranularityRatio, avg_paste_length: avgPasteLength, duration_s: durationS };
+  const allPastes = events.filter((e) => e.event === "paste");
+  const idleEvents = events.filter((e) => e.event === "idle");
+  const pasteAfterIdleCount = allPastes.filter((paste) =>
+    idleEvents.some((idle) => idle.timestamp >= paste.timestamp - 10_000 && idle.timestamp < paste.timestamp)
+  ).length;
+
+  const firstKeydown = events.find((e) => e.event === "keydown");
+  const firstInteractionDelayS = firstKeydown
+    ? +(( firstKeydown.timestamp - startedAt) / 1000).toFixed(1)
+    : 0;
+
+  let avgKeypressesBetweenPastes = 0;
+  if (allPastes.length >= 2) {
+    const sorted = allPastes.slice().sort((a, b) => a.timestamp - b.timestamp);
+    let total = 0;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const lo = sorted[i].timestamp;
+      const hi = sorted[i + 1].timestamp;
+      total += events.filter(
+        (e) => e.event === "keydown" && isEditKey(e.key) && e.timestamp > lo && e.timestamp < hi
+      ).length;
+    }
+    avgKeypressesBetweenPastes = +( total / (sorted.length - 1)).toFixed(1);
+  }
+
+  return { paste_rate_per_min: pasteRatePerMin, tab_switch_rate_per_10s: tabSwitchRatePer10s, edit_granularity_ratio: editGranularityRatio, avg_paste_length: avgPasteLength, duration_s: durationS, paste_after_idle_count: pasteAfterIdleCount, first_interaction_delay_s: firstInteractionDelayS, avg_keypresses_between_pastes: avgKeypressesBetweenPastes };
 }
 
 async function startNewSession(tabId) {
@@ -41,7 +66,7 @@ async function startNewSession(tabId) {
     started_at: Date.now(),
     last_updated: Date.now(),
     raw_events: [],
-    stats: { paste_rate_per_min: 0, tab_switch_rate_per_10s: 0, edit_granularity_ratio: 0, avg_paste_length: 0, duration_s: 0 },
+    stats: { paste_rate_per_min: 0, tab_switch_rate_per_10s: 0, edit_granularity_ratio: 0, avg_paste_length: 0, duration_s: 0, paste_after_idle_count: 0, first_interaction_delay_s: 0, avg_keypresses_between_pastes: 0 },
     task_label: "",
     self_report_score: null,
   };

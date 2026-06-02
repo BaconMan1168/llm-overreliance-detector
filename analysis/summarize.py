@@ -4,9 +4,13 @@ import sys
 from pathlib import Path
 
 INDICATORS = [
-    ("paste_rate_per_min",      "Paste rate (/ min)",       2.0, 4.0),
-    ("tab_switch_rate_per_10s", "Tab switches (/ 10s)",     1.0, 2.5),
-    ("edit_granularity_ratio",  "Edit granularity (ratio)", 0.3, 0.6),
+    ("paste_rate_per_min",              "Paste rate (/ min)",              2.0, 4.0),
+    ("tab_switch_rate_per_10s",         "Tab switches (/ 10s)",            1.0, 2.5),
+    ("edit_granularity_ratio",          "Edit granularity (ratio)",        0.3, 0.6),
+    ("avg_paste_length",                "Avg paste length (chars)",        None, None),
+    ("paste_after_idle_count",          "Paste after idle (count)",        None, None),
+    ("first_interaction_delay_s",       "First interaction delay (s)",     None, None),
+    ("avg_keypresses_between_pastes",   "Avg keypresses between pastes",   None, None),
 ]
 
 
@@ -31,8 +35,25 @@ def summarize(sessions):
             continue
         mean = statistics.mean(values)
         lo, hi = min(values), max(values)
-        risk = classify(mean, yellow, red)
-        print(f"  {label}: mean={mean:.2f}  range=[{lo:.2f}, {hi:.2f}]  [{risk}]")
+        if yellow is not None and red is not None:
+            risk = classify(mean, yellow, red)
+            print(f"  {label}: mean={mean:.2f}  range=[{lo:.2f}, {hi:.2f}]  [{risk}]")
+        else:
+            print(f"  {label}: mean={mean:.2f}  range=[{lo:.2f}, {hi:.2f}]")
+
+    high_reliance = [s for s in sessions if s.get("self_report_score") and s["self_report_score"] != ""]
+    if high_reliance:
+        flagged = [s for s in high_reliance if float(s["self_report_score"]) >= 4]
+        if flagged:
+            print(f"\n  High self-reported reliance (score >= 4): {len(flagged)} session(s)")
+            for s in flagged:
+                sid = s.get("session_id", "?")
+                score = s["self_report_score"]
+                pr = s.get("paste_rate_per_min", "?")
+                eg = s.get("edit_granularity_ratio", "?")
+                task = s.get("task_label", "")
+                label_str = f"  task={task!r}" if task else ""
+                print(f"    {sid}: score={score}  paste_rate={pr}  edit_granularity={eg}{label_str}")
 
 
 def main():
